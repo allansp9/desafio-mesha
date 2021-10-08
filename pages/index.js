@@ -25,7 +25,7 @@ export default function Home({ genres }) {
       try {
         const response = await axios.get(
           encodeURI(
-            `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=73550798a02d06973c60723797d6ed96&units=metric`
+            `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${process.env.NEXT_PUBLIC_OWM_KEY}&units=metric`
           )
         );
         if (response.data) {
