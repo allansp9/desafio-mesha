@@ -1,5 +1,15 @@
 import React from "react";
-import { Button } from "@chakra-ui/react";
+import {
+  Button,
+  Table,
+  Thead,
+  Tbody,
+  Tfoot,
+  Tr,
+  Th,
+  Td,
+  TableCaption,
+} from "@chakra-ui/react";
 import Image from "next/image";
 
 const PlaylistInfo = ({ children }) => (
@@ -28,21 +38,25 @@ const PlaylistDisplay = ({ playlist, genre, cityInfo, saveToStorage }) => {
             {cityInfo.main.temp.toFixed(0)}&deg;C
           </p>
         </div>
-        <div className="flex flex-col flex-1 p-3 justify-between items-center">
+        <div className="flex flex-col flex-1 p-3 justify-end items-center gap-10">
           <p className="text-3xl">Mood: {genre}</p>
-          <Button onClick={saveToStorage} colorScheme="green">
+          <Button onClick={saveToStorage} colorScheme="green" className="">
             save playlist
           </Button>
         </div>
       </div>
 
-      <div className="p-3">
-        {playlist.map((track) => (
-          <p key={track.key}>
-            {track.title} - {track.subtitle}
-          </p>
-        ))}
-      </div>
+      <Table variant="striped" colorScheme="green" size="sm">
+        <Tbody>
+          {playlist.map((track) => (
+            <Tr>
+              <Td key={track.key}>
+                {track.title} - {track.subtitle}
+              </Td>
+            </Tr>
+          ))}
+        </Tbody>
+      </Table>
     </div>
   );
 };
