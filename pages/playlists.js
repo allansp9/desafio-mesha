@@ -7,7 +7,15 @@ import {
   AccordionPanel,
   AccordionIcon,
   Box,
+  Button,
+  Text,
+  Table,
+  Tbody,
+  Tr,
+  Td,
+  Heading,
 } from "@chakra-ui/react";
+import { ArrowBackIcon } from "@chakra-ui/icons";
 
 const Playlists = () => {
   const [playlists, setPlaylists] = useState([]);
@@ -31,41 +39,60 @@ const Playlists = () => {
   }
 
   return (
-    <div>
-      <h1>playlists</h1>
-      <Link href="/">
-        <a>back</a>
-      </Link>
+    <div className="container mx-auto min-w-[350px] flex flex-col items-center justify-center pt-52 px-5 pb-10 gap-10">
+      <Heading as="h1" size="3xl">
+        Playlists
+      </Heading>
+
       <Accordion allowToggle>
         {playlists.length > 0 ? (
           playlists.map((playlist, index) => {
             return Object.entries(playlist).map(([key, val]) => {
               return (
                 <AccordionItem key={key}>
-                  <h2>
+                  <Text>
                     <AccordionButton>
                       <Box flex="1" textAlign="left">
-                        {key}
+                        <Text>
+                          {key} | {val.city} | temp: {val.temp.toFixed(0)}&deg;C
+                          | mood: {val.genre}
+                        </Text>
                       </Box>
                       <AccordionIcon />
                     </AccordionButton>
-                  </h2>
-                  <AccordionPanel pb={4}>
-                    {val.playlist.map((track) => (
-                      <p key={track.key}>{track.title}</p>
-                    ))}
-                    <button onClick={() => deletePlaylist(key)}>
-                      delete playlist
-                    </button>
+                  </Text>
+                  <AccordionPanel pb={4} className="flex flex-col">
+                    <Table variant="striped" size="sm">
+                      <Tbody>
+                        {val.playlist.map((track) => (
+                          <Tr key={track.key}>
+                            <Td>
+                              {track.title} - {track.subtitle}
+                            </Td>
+                          </Tr>
+                        ))}
+                      </Tbody>
+                    </Table>
+                    <Button
+                      onClick={() => deletePlaylist(key)}
+                      colorScheme="red"
+                    >
+                      Delete
+                    </Button>
                   </AccordionPanel>
                 </AccordionItem>
               );
             });
           })
         ) : (
-          <p>No playlists saved</p>
+          <p>You have no playlists saved at the moment.</p>
         )}
       </Accordion>
+      <Link href="/" passHref>
+        <Button variant="link" colorScheme="green" leftIcon={<ArrowBackIcon />}>
+          Go to Homepage
+        </Button>
+      </Link>
     </div>
   );
 };

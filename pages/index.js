@@ -2,8 +2,9 @@ import { useState } from "react";
 import axios from "axios";
 import Head from "next/head";
 import Link from "next/link";
-import { Button, Input, useToast } from "@chakra-ui/react";
+import { Button, Input, useToast, Text } from "@chakra-ui/react";
 import { ArrowForwardIcon } from "@chakra-ui/icons";
+import moment from "moment";
 import PlaylistDisplay from "../components/playlist-display";
 
 export default function Home({ genres }) {
@@ -18,11 +19,12 @@ export default function Home({ genres }) {
 
   function saveToStorage() {
     const city = cityInfo.name;
-    const timenow = new Date();
+    const timestamp = moment().format();
+
     const temp = cityInfo.main.temp;
-    const userData = { playlist, timenow, temp, genre, city };
+    const userData = { playlist, timestamp, temp, genre, city };
     try {
-      localStorage.setItem(`playlist_${timenow}`, JSON.stringify(userData));
+      localStorage.setItem(`playlist_${timestamp}`, JSON.stringify(userData));
       toast({
         title: "Playlist saved!",
         description: "Your playlist has been saved to the local storage.",
@@ -87,7 +89,6 @@ export default function Home({ genres }) {
             },
           };
           const response = await axios.request(options);
-          console.log(response.data);
           setPlaylist(response.data.tracks);
         } catch (error) {
           console.log(error);
@@ -108,22 +109,28 @@ export default function Home({ genres }) {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <Input
-        variant="flushed"
-        value={city}
-        onChange={(e) => setCity(e.target.value)}
-        placeholder="search for places"
-        autoComplete="off"
-        className="mb-5"
-      />
-      <Button
-        isLoading={loading}
-        onClick={(e) => submitHandler(e)}
-        colorScheme="green"
-        className="mb-5"
+      <form
+        action=""
+        onSubmit={(e) => submitHandler(e)}
+        className="flex flex-col items-center w-full"
       >
-        Search
-      </Button>
+        <Input
+          variant="flushed"
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+          placeholder="Search for places"
+          autoComplete="off"
+          className="mb-5"
+        />
+        <Button
+          isLoading={loading}
+          colorScheme="green"
+          className="mb-5"
+          type="submit"
+        >
+          Search
+        </Button>
+      </form>
 
       {!loading && cityInfo && playlist && (
         <>
@@ -135,7 +142,15 @@ export default function Home({ genres }) {
           />
         </>
       )}
-      {!loading && cityNotFound && <p>City not found</p>}
+      {!loading && cityNotFound && (
+        <div className="my-10">
+          <Text className="text-center">No data found</Text>
+          <Text as="i" color="gray.500">
+            (Try adding the country tag for better approximation, ex:
+            Salvador,BR)
+          </Text>
+        </div>
+      )}
 
       <Link href="/playlists" passHref>
         <Button
