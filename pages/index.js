@@ -1,21 +1,37 @@
+import { useState } from "react";
 import axios from "axios";
 import Head from "next/head";
-import { useEffect, useState } from "react";
-import moment from "moment";
+import Link from "next/link";
+import { Button, Input, useToast } from "@chakra-ui/react";
+import { ArrowForwardIcon } from "@chakra-ui/icons";
+import PlaylistDisplay from "../components/playlist-display";
 
 export default function Home({ genres }) {
   const [city, setCity] = useState("");
   const [cityInfo, setCityInfo] = useState(null);
   const [playlist, setPlaylist] = useState(null);
-  const [temp, setTemp] = useState(null);
   const [genre, setGenre] = useState(null);
-  const [timestamp, setTimestamp] = useState(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [loading, setLoading] = useState(null);
+  const [cityNotFound, setCityNotFound] = useState(false);
 
-  function changeHandler(e) {
-    if (e.target.value.trim() !== "") {
-      const trimmedCity = e.target.value.trim();
-      setCity(trimmedCity);
+  const toast = useToast();
+
+  function saveToStorage() {
+    const city = cityInfo.name;
+    const timenow = new Date();
+    const temp = cityInfo.main.temp;
+    const userData = { playlist, timenow, temp, genre, city };
+    try {
+      localStorage.setItem(`playlist_${timenow}`, JSON.stringify(userData));
+      toast({
+        title: "Playlist saved!",
+        description: "Your playlist has been saved to the local storage.",
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.log(error);
     }
   }
 
@@ -23,92 +39,113 @@ export default function Home({ genres }) {
     e.preventDefault();
     if (city.trim() !== "") {
       try {
+        setCityInfo(null);
+        setPlaylist(null);
+        setLoading(true);
         const response = await axios.get(
           encodeURI(
             `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${process.env.NEXT_PUBLIC_OWM_KEY}&units=metric`
           )
         );
-        if (response.data) {
-          setTimestamp(moment.unix(response.data.dt).format("D/M/YYYY"));
-          setCityInfo(response.data);
+
+        setCityNotFound(false);
+        setLoading(false);
+        setCityInfo(response.data);
+        const temp = parseInt(response.data.main.temp);
+        let genreFilter = "";
+
+        if (temp > 32) {
+          genreFilter = "genre-global-chart-7";
+          setGenre("Rock");
+        }
+        if (temp < 32 && temp > 24) {
+          genreFilter = "genre-global-chart-1";
+          setGenre("Pop");
+        }
+        if (temp < 24 && temp > 16) {
+          genreFilter = "genre-global-chart-10";
+          setGenre("Classical");
+        }
+        if (temp < 16) {
+          genreFilter = "genre-global-chart-11";
+          setGenre("LoFi");
+        }
+
+        try {
+          const options = {
+            method: "GET",
+            url: "https://shazam.p.rapidapi.com/charts/track",
+            params: {
+              locale: "en-US",
+              listId: genreFilter,
+              pageSize: "20",
+              startFrom: "0",
+            },
+            headers: {
+              "x-rapidapi-host": "shazam.p.rapidapi.com",
+              "x-rapidapi-key": process.env.NEXT_PUBLIC_SHAZAM_KEY,
+            },
+          };
+          const response = await axios.request(options);
           console.log(response.data);
-          setTemp(parseInt(response.data.main.temp));
-
-          let genreFilter = "";
-          if (temp > 32) {
-            genreFilter = "genre-global-chart-7";
-            setGenre("Rock");
-          }
-          if (temp < 32 && temp > 24) {
-            genreFilter = "genre-global-chart-1";
-            setGenre("Pop");
-          }
-          if (temp < 24 && temp > 16) {
-            genreFilter = "genre-global-chart-10";
-            setGenre("Country");
-          }
-          if (temp < 16) {
-            genreFilter = "genre-global-chart-11";
-            setGenre("AfroBeats");
-          }
-
-          try {
-            const options = {
-              method: "GET",
-              url: "https://shazam.p.rapidapi.com/charts/track",
-              params: {
-                locale: "en-US",
-                listId: genreFilter,
-                pageSize: "20",
-                startFrom: "0",
-              },
-              headers: {
-                "x-rapidapi-host": "shazam.p.rapidapi.com",
-                "x-rapidapi-key": process.env.NEXT_PUBLIC_SHAZAM_KEY,
-              },
-            };
-            const response = await axios.request(options);
-            console.log(response.data);
-            setPlaylist(response.data.tracks);
-          } catch (error) {
-            console.log(error);
-          }
+          setPlaylist(response.data.tracks);
+        } catch (error) {
+          console.log(error);
         }
       } catch (error) {
+        setLoading(false);
+        setCityNotFound(true);
         console.log(error);
       }
-      setIsLoaded(true);
+      setCity("");
     }
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2">
+    <div className="container mx-auto min-w-[350px] flex flex-col items-center justify-center pt-52 px-5 pb-10">
       <Head>
-        <title>Create Next App</title>
+        <title>Mesha Challenge</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <form>
-        <input
-          type="text"
-          name="city"
-          value={city}
-          onChange={(e) => changeHandler(e)}
-          placeholder="Ex: Tokyo"
-          autoComplete="off"
-        />
-        <button onClick={(e) => submitHandler(e)}>search</button>
-      </form>
-      <div>
-        {isLoaded && playlist && (
-          <ul>
-            {playlist.map((track) => (
-              <li key={track.key}>{track.title}</li>
-            ))}
-          </ul>
-        )}
-        {isLoaded && !playlist && <p>City not found</p>}
-      </div>
+      <Input
+        variant="flushed"
+        value={city}
+        onChange={(e) => setCity(e.target.value)}
+        placeholder="search for places"
+        autoComplete="off"
+        className="mb-5"
+      />
+      <Button
+        isLoading={loading}
+        onClick={(e) => submitHandler(e)}
+        colorScheme="green"
+        className="mb-5"
+      >
+        Search
+      </Button>
+
+      {!loading && cityInfo && playlist && (
+        <>
+          <PlaylistDisplay
+            playlist={playlist}
+            genre={genre}
+            cityInfo={cityInfo}
+            saveToStorage={saveToStorage}
+          />
+        </>
+      )}
+      {!loading && cityNotFound && <p>City not found</p>}
+
+      <Link href="/playlists" passHref>
+        <Button
+          variant="link"
+          colorScheme="green"
+          rightIcon={<ArrowForwardIcon />}
+        >
+          Go to saved playlists
+        </Button>
+      </Link>
     </div>
   );
 }
